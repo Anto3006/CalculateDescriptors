@@ -80,7 +80,7 @@ def createDataset(data,fileName,split,splitPercentage,prefix=""):
 
 def main():
     reader = ParameterReader()
-    parameters = reader.leerParametros()
+    parameters = reader.readParameters()
     fileName = parameters["data"]
     split = parameters["split"]
     splitPercentage = parameters["splitPercentage"]
