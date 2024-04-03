@@ -1,10 +1,11 @@
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 import pandas as pd
 
 
 def calculateDescriptorsMolRDKit(molecule):
-    descriptors = Chem.Descriptors.CalcMolDescriptors(molecule)
+    descriptors = Descriptors.CalcMolDescriptors(molecule)
     descriptors["NumAmideBonds"] = rdMolDescriptors.CalcNumAmideBonds(molecule)
     descriptors["NumSpiroAtoms"] = rdMolDescriptors.CalcNumSpiroAtoms(molecule)
     descriptors["NumBridgeheadAtoms"] = rdMolDescriptors.CalcNumBridgeheadAtoms(molecule)
