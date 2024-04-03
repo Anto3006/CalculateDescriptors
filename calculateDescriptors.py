@@ -1,0 +1,90 @@
+import pandas as pd
+import rpy2.robjects.packages as rpackages
+from rpy2.robjects import pandas2ri
+import rpy2.robjects as ro
+from descriptorsRDKit import calculateDescriptorsRDKit
+from descriptorsJazzy import calculateDescriptorsJazzy
+from openbabel import pybel
+from rdkit.Chem import CanonSmiles
+from parameterReader import ParameterReader
+from sklearn.model_selection import train_test_split
+
+pandas2ri.activate()
+
+from rpy2.rinterface_lib.callbacks import logger as rpy2_logger
+import logging
+rpy2_logger.setLevel(logging.ERROR)
+
+
+def calculateDescriptorsCDK(smiles):
+    rcdk = rpackages.importr("rcdk")
+    base = rpackages.importr("base")
+    descCategories = rcdk.get_desc_categories()
+    getDescNames = rcdk.get_desc_names
+
+    descNames = base.unique(base.unlist(base.sapply(descCategories,getDescNames)))
+    descNames = [name for name in descNames if name != "org.openscience.cdk.qsar.descriptors.molecular.LongestAliphaticChainDescriptor"]
+    descNames = ro.StrVector(descNames)
+
+    mols = rcdk.parse_smiles(ro.StrVector(smiles))
+    descriptorsCDK = rcdk.eval_desc(mols,descNames)
+
+    descriptorsCDK = ro.conversion.rpy2py(descriptorsCDK)
+    descriptorsCDK.index = [i for i in range(len(descriptorsCDK.index))]
+
+    return descriptorsCDK
+
+
+
+
+def calculateDescriptorsObabel(smiles):
+    descriptorsObabel = pd.DataFrame()
+    i = 0
+    for smile in smiles:
+        mol = pybel.readstring("smi",smile)
+        desc = mol.calcdesc()
+        descriptorsObabel = pd.concat([descriptorsObabel,pd.DataFrame(desc,index=[i])])
+        i+=1
+    descriptorsObabel.drop(columns=["cansmi","cansmiNS","formula","title","InChI","InChIKey","smarts"],inplace=True)
+    columns = [col + "_Obabel" for col in descriptorsObabel.columns]
+    descriptorsObabel.columns = columns
+    return descriptorsObabel
+
+def calculateDescriptors(smiles):
+    smilesCanon = []
+    i=0
+    for smile in smiles:
+        smilesCanon.append(CanonSmiles(smile))
+    descriptorsCDK = calculateDescriptorsCDK(smilesCanon)
+    descriptorsObabel = calculateDescriptorsObabel(smilesCanon)
+    descriptorsRDKit = calculateDescriptorsRDKit(smilesCanon)
+    descriptorsJazzy = calculateDescriptorsJazzy(smilesCanon)
+    descriptors = pd.concat([descriptorsJazzy,descriptorsCDK,descriptorsRDKit,descriptorsObabel],axis=1)
+    descriptors.insert(0,"smiles",smilesCanon)
+    return descriptors
+
+def createDataset(data,fileName,split,splitPercentage,prefix=""):
+    data.sort_index(inplace=True)
+    if split:
+        train_data,test_data= train_test_split(data,test_size=splitPercentage,random_state=3006)
+        createDataset(train_data,fileName,split=False,splitPercentage=0,prefix="train_")
+        createDataset(test_data,fileName,split=False,splitPercentage=0,prefix="test_")
+    else:
+        smiles = data["smiles"].to_numpy()
+        objetivo = data[data.columns[1]].to_numpy()
+        dataset = calculateDescriptors(smiles)
+        dataset.insert(1,data.columns[1],objetivo)
+        for index in range(2,len(data.columns)):
+            dataset.insert(2,data.columns[index],data[data.columns[index]].to_numpy())
+        dataset.to_csv(prefix+"desc_"+fileName,index=False)
+
+def main():
+    reader = ParameterReader()
+    parameters = reader.leerParametros()
+    fileName = parameters["data"]
+    split = parameters["split"]
+    splitPercentage = parameters["splitPercentage"]
+    createDataset(pd.read_csv(fileName),fileName,split=split,splitPercentage=splitPercentage)
+
+if __name__ == "__main__":
+    main()
