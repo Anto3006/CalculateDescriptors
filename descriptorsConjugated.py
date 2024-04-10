@@ -31,8 +31,7 @@ def calculateConjugatedDescriptors(smiles_list):
     csv_files.remove("cjsystems.csv")
     descriptors_file_path = 'conjugated_descriptors.csv'
     descriptors = pd.read_csv(descriptors_file_path)
-    descriptors.rename(columns={descriptors.columns[0]:"smiles"},inplace=True)
-    descriptors["smiles"] = smiles_list
+    descriptors.drop(columns=[descriptors.columns[0]],axis=1,inplace=True)
     for file in sdf_files:
         os.remove(file)
     for file in csv_files:
