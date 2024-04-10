@@ -31,7 +31,7 @@ def calculateDescriptorsJazzy(smiles):
                     v_dict[energyColumnNames[key]+"0"] = [v[key]]
                     v_dict[energyColumnNames[key]] = [v[key]/4.184]
             logP = Chem.Crippen.MolLogP(molecule)
-            d = deltag_from_smiles(canonSmile)
+            d = deltag_from_smiles(canonSmile)/4.184
             dg_sol_oct = -logP*1.36+d
             deltag_sol_oct.append(dg_sol_oct)
         except Exception as e:
