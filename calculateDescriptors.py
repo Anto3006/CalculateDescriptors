@@ -7,7 +7,7 @@ from descriptorsJazzy import calculateDescriptorsJazzy
 from openbabel import pybel
 from rdkit.Chem import CanonSmiles
 from parameterReader import ParameterReader
-from sklearn.model_selection import train_test_split
+from descriptorsConjugated import calculateConjugatedDescriptors
 
 pandas2ri.activate()
 
@@ -59,32 +59,26 @@ def calculateDescriptors(smiles):
     descriptorsObabel = calculateDescriptorsObabel(smilesCanon)
     descriptorsRDKit = calculateDescriptorsRDKit(smilesCanon)
     descriptorsJazzy = calculateDescriptorsJazzy(smilesCanon)
-    descriptors = pd.concat([descriptorsJazzy,descriptorsCDK,descriptorsRDKit,descriptorsObabel],axis=1)
+    descriptorsConj = calculateConjugatedDescriptors(smilesCanon)
+    descriptors = pd.concat([descriptorsJazzy,descriptorsCDK,descriptorsRDKit,descriptorsObabel,descriptorsConj],axis=1)
     descriptors.insert(0,"smiles",smilesCanon)
     return descriptors
 
-def createDataset(data,fileName,split,splitPercentage,prefix=""):
+def createDataset(data,fileName):
     data.sort_index(inplace=True)
-    if split:
-        train_data,test_data= train_test_split(data,test_size=splitPercentage,random_state=3006)
-        createDataset(train_data,fileName,split=False,splitPercentage=0,prefix="train_")
-        createDataset(test_data,fileName,split=False,splitPercentage=0,prefix="test_")
-    else:
-        smiles = data["smiles"].to_numpy()
-        objetivo = data[data.columns[1]].to_numpy()
-        dataset = calculateDescriptors(smiles)
-        dataset.insert(1,data.columns[1],objetivo)
-        for index in range(2,len(data.columns)):
-            dataset.insert(2,data.columns[index],data[data.columns[index]].to_numpy())
-        dataset.to_csv(prefix+"desc_"+fileName,index=False)
+    smiles = data["smiles"].to_numpy()
+    objetivo = data[data.columns[1]].to_numpy()
+    dataset = calculateDescriptors(smiles)
+    dataset.insert(1,data.columns[1],objetivo)
+    for index in range(2,len(data.columns)):
+        dataset.insert(2,data.columns[index],data[data.columns[index]].to_numpy())
+    dataset.to_csv("desc_"+fileName,index=False)
 
 def main():
     reader = ParameterReader()
     parameters = reader.readParameters()
     fileName = parameters["data"]
-    split = parameters["split"]
-    splitPercentage = parameters["splitPercentage"]
-    createDataset(pd.read_csv(fileName),fileName,split=split,splitPercentage=splitPercentage)
+    createDataset(pd.read_csv(fileName),fileName)
 
 if __name__ == "__main__":
     main()

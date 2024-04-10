@@ -20,18 +20,21 @@ def smiles2sdf(smiles, output_file):
 
 
 
-def calculateConjugatedDescriptors(smiles):
-    for i, smiles in enumerate(smiles):
+def calculateConjugatedDescriptors(smiles_list):
+    for i, smiles in enumerate(smiles_list):
         output_file = f'molecule_{i+1}.sdf'
         smiles2sdf(smiles, output_file)
     subprocess.call("Rscript conjugaR.R", shell=True)
     files = os.listdir()
-    sdf_files = [file for file in files if file.split(".")[-1] == ".sdf"]
-    for file in sdf_files:
-        os.remove(file)
+    sdf_files = [file for file in files if file.split(".")[-1] == "sdf"]
+    csv_files = [file for file in files if file.split(".")[-1] == "csv"]
+    csv_files.remove("cjsystems.csv")
     descriptors_file_path = 'conjugated_descriptors.csv'
     descriptors = pd.read_csv(descriptors_file_path)
-    os.remove(descriptors_file_path)
+    descriptors.rename(columns={descriptors.columns[0]:"smiles"},inplace=True)
+    descriptors["smiles"] = smiles_list
+    for file in sdf_files:
+        os.remove(file)
+    for file in csv_files:
+        os.remove(file)
     return descriptors
-
-calculateConjugatedDescriptors(["C","CC"])
