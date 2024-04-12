@@ -27,13 +27,13 @@ def calculateConjugatedDescriptors(smiles_list):
     subprocess.call("Rscript conjugaR.R", shell=True)
     files = os.listdir()
     sdf_files = [file for file in files if file.split(".")[-1] == "sdf"]
-    csv_files = [file for file in files if file.split(".")[-1] == "csv"]
-    csv_files.remove("cjsystems.csv")
     descriptors_file_path = 'conjugated_descriptors.csv'
     descriptors = pd.read_csv(descriptors_file_path)
     descriptors.drop(columns=[descriptors.columns[0]],axis=1,inplace=True)
     for file in sdf_files:
         os.remove(file)
-    for file in csv_files:
+    for i in range(len(smiles_list)):
+        file = f"molecule_{i+1}_conjugate_counts.csv"
         os.remove(file)
+    os.remove(descriptors_file_path)
     return descriptors
