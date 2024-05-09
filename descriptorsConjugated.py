@@ -1,6 +1,4 @@
 from rdkit import Chem
-from rdkit.Chem import Draw
-from rdkit.Chem import PandasTools
 from rdkit.Chem import AllChem
 import subprocess
 import os
