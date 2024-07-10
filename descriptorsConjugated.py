@@ -10,7 +10,12 @@ def smiles2sdf(smiles, output_file):
     if mol is None:
         return
     mol = Chem.AddHs(mol)
-    AllChem.EmbedMolecule(mol, randomSeed=42)
+    count = 0
+    while True:
+        result = AllChem.EmbedMolecule(mol, randomSeed=count, maxAttempts=5000)
+        count += 1
+        if result == 0:
+            break
     AllChem.UFFOptimizeMolecule(mol)
     writer = Chem.SDWriter(output_file)
     writer.write(mol)
