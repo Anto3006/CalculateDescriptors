@@ -52,9 +52,12 @@ def calculateDescriptorsObabel(smiles):
 
 def calculateDescriptors(smiles):
     smilesCanon = []
-    i=0
     for smile in smiles:
-        smilesCanon.append(CanonSmiles(smile))
+        try:
+            smilesCanon.append(CanonSmiles(smile))
+        except:
+            print(f"Failed to canonize {smile}")
+            smilesCanon.append(smile)
     descriptorsCDK = calculateDescriptorsCDK(smilesCanon)
     descriptorsObabel = calculateDescriptorsObabel(smilesCanon)
     descriptorsRDKit = calculateDescriptorsRDKit(smilesCanon)
