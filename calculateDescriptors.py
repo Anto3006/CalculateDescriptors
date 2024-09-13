@@ -57,7 +57,6 @@ def calculateDescriptors(smiles):
             smilesCanon.append(CanonSmiles(smile))
         except:
             print(f"Failed to canonize {smile}")
-            smilesCanon.append(smile)
     descriptorsCDK = calculateDescriptorsCDK(smilesCanon)
     descriptorsObabel = calculateDescriptorsObabel(smilesCanon)
     descriptorsRDKit = calculateDescriptorsRDKit(smilesCanon)
