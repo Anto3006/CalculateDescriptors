@@ -34,8 +34,8 @@ def calculateDescriptorsJazzy(smiles):
             d = deltag_from_smiles(canonSmile)/4.184
             dg_sol_oct = -logP*1.36+d
             deltag_sol_oct.append(dg_sol_oct)
-        except Exception as e:
-            print(e)
+        except:
+            print(f"Jazzy: Failed to calculate descriptors for {smile}")
             deltag_sol_oct.append(" ")
             for key in columnNames:
                 if columnNames[key] in v_dict:
@@ -49,7 +49,6 @@ def calculateDescriptorsJazzy(smiles):
                 else:
                     v_dict[energyColumnNames[key]+"0"] = [" "]
                     v_dict[energyColumnNames[key]] = [" "]
-            print("Error:",smile)
     for key in v_dict:
         descriptors[key] = v_dict[key]
     descriptors["delta_g_sol_oct"] = deltag_sol_oct

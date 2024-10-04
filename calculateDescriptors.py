@@ -26,24 +26,42 @@ def calculateDescriptorsCDK(smiles):
     descNames = [name for name in descNames if name != "org.openscience.cdk.qsar.descriptors.molecular.LongestAliphaticChainDescriptor"]
     descNames = ro.StrVector(descNames)
 
-    mols = rcdk.parse_smiles(ro.StrVector(smiles))
+    mols = rcdk.parse_smiles(ro.StrVector(["C"]))
     descriptorsCDK = rcdk.eval_desc(mols,descNames)
+    columns = ro.conversion.rpy2py(descriptorsCDK).columns
+    descCDK = pd.DataFrame()
+    i = 0
+    for smi in smiles:
+        try:
+            mols = rcdk.parse_smiles(ro.StrVector([smi]))
+            descriptorsCDK = rcdk.eval_desc(mols,descNames)
 
-    descriptorsCDK = ro.conversion.rpy2py(descriptorsCDK)
-    descriptorsCDK.index = [i for i in range(len(descriptorsCDK.index))]
+            descriptorsCDK = ro.conversion.rpy2py(descriptorsCDK)
+            descCDK = pd.concat([descCDK,descriptorsCDK],ignore_index=True)
+        except: 
+            descriptorsCDK = pd.DataFrame(pd.NA,columns=columns,index=[i])
+            descCDK = pd.concat([descCDK,descriptorsCDK],ignore_index=True)
+            print(f"CDK: Failed to calculate descriptors for {smi}")
 
-    return descriptorsCDK
+        i += 1
+
+    return descCDK
 
 
 
 
 def calculateDescriptorsObabel(smiles):
     descriptorsObabel = pd.DataFrame()
+    columns = list(pybel.readstring("smi","C").calcdesc().keys())
     i = 0
     for smile in smiles:
-        mol = pybel.readstring("smi",smile)
-        desc = mol.calcdesc()
-        descriptorsObabel = pd.concat([descriptorsObabel,pd.DataFrame(desc,index=[i])])
+        try:
+            mol = pybel.readstring("smi",smile)
+            desc = mol.calcdesc()
+            descriptorsObabel = pd.concat([descriptorsObabel,pd.DataFrame(desc,index=[i])])
+        except:
+            descriptorsObabel = pd.concat([descriptorsObabel,pd.DataFrame(pd.NA,index=[i],columns=columns)])
+            print(f"Obabel: Failed to calculate descriptors for {smi}")
         i+=1
     descriptorsObabel.drop(columns=["cansmi","cansmiNS","formula","title","InChI","InChIKey","smarts"],inplace=True)
     columns = [col + "_Obabel" for col in descriptorsObabel.columns]
@@ -57,6 +75,8 @@ def calculateDescriptors(smiles):
             smilesCanon.append(CanonSmiles(smile))
         except:
             print(f"Failed to canonize {smile}")
+            smilesCanon.append(smile)
+
     descriptorsCDK = calculateDescriptorsCDK(smilesCanon)
     descriptorsObabel = calculateDescriptorsObabel(smilesCanon)
     descriptorsRDKit = calculateDescriptorsRDKit(smilesCanon)
@@ -68,13 +88,17 @@ def calculateDescriptors(smiles):
 
 def createDataset(data,fileName):
     data.sort_index(inplace=True)
-    smiles = data["smiles"].to_numpy()
-    objetivo = data[data.columns[1]].to_numpy()
-    dataset = calculateDescriptors(smiles)
-    dataset.insert(1,data.columns[1],objetivo)
-    for index in range(2,len(data.columns)):
-        dataset.insert(2,data.columns[index],data[data.columns[index]].to_numpy())
-    dataset.to_csv("desc_"+fileName,index=False)
+    smiles_column = None
+    if "smiles" in data.columns:
+        smiles_column = "smiles"
+    elif "SMILES" in data.columns:
+        smiles_column = "SMILES"
+    if smiles_column is not None:
+        smiles = data[smiles_column].to_numpy()
+        dataset = calculateDescriptors(smiles)
+        for index in range(len(data.columns)-1,0,-1):
+            dataset.insert(1,data.columns[index],data[data.columns[index]].to_numpy())
+        dataset.to_csv("desc_"+fileName,index=False)
 
 def main():
     reader = ParameterReader()

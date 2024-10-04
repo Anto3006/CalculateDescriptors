@@ -36,7 +36,10 @@ def calculateConjugatedDescriptors(smiles_list):
     for file in sdf_files:
         os.remove(file)
     for i in range(len(smiles_list)):
-        file = f"molecule_{i+1}_conjugate_counts.csv"
-        os.remove(file)
+        try:
+            file = f"molecule_{i+1}_conjugate_counts.csv"
+            os.remove(file)
+        except:
+            pass
     os.remove(descriptors_file_path)
     return descriptors

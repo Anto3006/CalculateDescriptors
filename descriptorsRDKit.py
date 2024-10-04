@@ -141,6 +141,7 @@ def calculateDescriptorsRDKit(smiles):
                 else:
                     descriptorsRDKit[descriptor+"_rdkit"] = [descriptors[descriptor]]
         except:
+            print(f"RDKit: Faile to calculate descriptors for {smile}")
             for descriptor in descriptorsRDKit:
-                descriptorsRDKit[descriptor+"_rdkit"].append("")
+                descriptorsRDKit[descriptor].append("")
     return pd.DataFrame(descriptorsRDKit)
